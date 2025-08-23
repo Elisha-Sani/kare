@@ -27,26 +27,26 @@ export default function RequestEvent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // ✅ Basic validation
     if (!formData.firstName || !formData.email || !formData.eventType) {
-      toast("Missing fields ⚠️", {
-        description:
-          "Please fill in at least First Name, Email, and Event Type.",
-      });
+      toast.error("Please fill in all required fields");
       return;
     }
 
     setLoading(true);
 
     try {
-      // ✅ Placeholder for backend API call
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-
-      toast("Request submitted 🎉", {
-        description: "Our team will contact you shortly to discuss your event.",
+      const response = await fetch("/api/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
 
-      // ✅ Clear form after success
+      if (!response.ok) {
+        throw new Error("Failed to submit request");
+      }
+
+      toast.success("Request submitted successfully! We'll contact you soon.");
+
       setFormData({
         firstName: "",
         lastName: "",
@@ -54,11 +54,9 @@ export default function RequestEvent() {
         eventType: "",
         details: "",
       });
-    } catch (err) {
-      console.error(err);
-      toast("Something went wrong ❌", {
-        description: "Please try again later or contact us directly.",
-      });
+    } catch (error) {
+      console.error("Submit error:", error);
+      toast.error("Failed to submit request. Please try again.");
     } finally {
       setLoading(false);
     }

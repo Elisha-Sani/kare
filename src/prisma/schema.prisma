@@ -1,37 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
 datasource db {
-  provider = "postgresql" // or "mysql" if you prefer
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
 model Admin {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(cuid())
   name      String
   email     String   @unique
   password  String
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-model RequestEvent {
-  id          Int      @id @default(autoincrement())
-  firstName   String
-  lastName    String
-  email       String
-  eventType   String
-  message     String
-  approved    Boolean  @default(false)
-  createdAt   DateTime @default(now())
+model EventRequest {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String
+  eventType String
+  message   String?
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Testimonial {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(cuid())
   name      String
   email     String
-  message   String
-  rating    Int       @default(5) // out of 5 stars
-  approved  Boolean   @default(false)
-  createdAt DateTime  @default(now())
+  comment   String
+  rating    Int      @default(5)
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
