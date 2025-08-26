@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import RequestEvent from "@/components/RequestEvent";
 import Services from "@/components/Services";
 import Testimonials from "@/components/Testimonials";
+import TestimonialForm from "@/components/TestimonialForm";
 
 export default function Home() {
   return (
@@ -15,6 +16,7 @@ export default function Home() {
         <About />
         <Services />
         <Testimonials />
+        <TestimonialForm />
         <RequestEvent />
       </main>
       <Footer />
