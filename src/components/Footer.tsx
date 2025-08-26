@@ -25,7 +25,7 @@ export default function Footer() {
 
         {/* Navigation */}
         <div
-          className="flex justify-center space-x-12 mb-8 tracking-wider uppercase"
+          className="flex justify-center space-x-6 md:text-lg text-sm md:space-x-12 mb-8 tracking-wider uppercase"
           style={{ fontFamily: "Montserrat, sans-serif", fontWeight: "400" }}
         >
           <a href="#portfolio" className="hover:opacity-70 transition-opacity">
