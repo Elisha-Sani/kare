@@ -1,7 +1,7 @@
 "use client";
 
 import { Card } from "./ui/card";
-import { Sparkles, Award, Zap } from "lucide-react";
+import { Sparkles, Award, Zap, Cake } from "lucide-react";
 
 const services = [
   {
@@ -19,6 +19,11 @@ const services = [
     title: "Fashion Events",
     desc: "Runway-inspired celebrations and unforgettable launches.",
   },
+  {
+    icon: Cake,
+    title: "Birthday Events",
+    desc: "We plan your events whether big or small, turning your birthday ideas into cherished memories that last a lifetime.",
+  },
 ];
 
 export default function Services() {
@@ -34,7 +39,7 @@ export default function Services() {
         </h2>
 
         {/* Services Grid */}
-        <div className="grid md:grid-cols-3 gap-10">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10">
           {services.map((service, i) => (
             <Card
               key={i}
