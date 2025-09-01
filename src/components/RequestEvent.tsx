@@ -42,7 +42,9 @@ export default function RequestEvent() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to submit request");
+        const errorData = await response.json();
+        console.error("API error response:", errorData);
+        throw new Error(errorData.error || "Failed to submit request");
       }
 
       toast.success("Request submitted successfully! We'll contact you soon.");

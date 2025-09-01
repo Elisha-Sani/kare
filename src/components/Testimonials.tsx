@@ -3,6 +3,7 @@
 import { Card } from "./ui/card";
 import { useEffect, useState } from "react";
 import { Star } from "lucide-react";
+import renderStars from "./RenderStars";
 
 interface Testimonial {
   id: string;
@@ -48,7 +49,7 @@ export default function Testimonials() {
   useEffect(() => {
     const fetchTestimonials = async () => {
       try {
-        const response = await fetch("");
+        const response = await fetch("/api/testimonials");
         if (response.ok) {
           const data = await response.json();
           if (data.length > 0) {
@@ -66,23 +67,23 @@ export default function Testimonials() {
     fetchTestimonials();
   }, []);
 
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex gap-1 mb-4">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            size={16}
-            className={
-              star <= rating
-                ? "fill-yellow-400 text-yellow-400"
-                : "text-gray-300"
-            }
-          />
-        ))}
-      </div>
-    );
-  };
+  // const renderStars = (rating: number) => {
+  //   return (
+  //     <div className="flex gap-1 mb-4">
+  //       {[1, 2, 3, 4, 5].map((star) => (
+  //         <Star
+  //           key={star}
+  //           size={16}
+  //           className={
+  //             star <= rating
+  //               ? "fill-yellow-400 text-yellow-400"
+  //               : "text-gray-300"
+  //           }
+  //         />
+  //       ))}
+  //     </div>
+  //   );
+  // };
 
   if (loading) {
     return (

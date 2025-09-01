@@ -1,0 +1,26 @@
+# Node modules
+node_modules/
+
+# Next.js build output
+.next/
+out/
+build/
+
+# TypeScript environment file
+next-env.d.ts
+
+# Prisma generated client files
+prisma/generated/
+src/generated/prisma/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.*.local
+
+# Lock files (optional)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
