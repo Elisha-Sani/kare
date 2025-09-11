@@ -1,9 +1,21 @@
 // src/app/api/dashboard/summary/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { clerkClient, auth } from "@clerk/nextjs/server";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const clerk = await clerkClient();
+    const user = await clerk.users.getUser(userId);
+    if (user.publicMetadata.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     // Fetch all counts in parallel for better performance
     const [
       totalRequests,

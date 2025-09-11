@@ -3,6 +3,8 @@
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
+import Image from "next/image";
+import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs";
 
 type NavItem = {
   id: string;
@@ -20,6 +22,9 @@ const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [active, setActive] = useState<string>("hero");
 
+  const { user } = useUser(); // <-- useUser hook
+  const isAdmin = user?.publicMetadata.role === "admin";
+
   useEffect(() => {
     const options: IntersectionObserverInit = {
       root: null,
@@ -28,15 +33,11 @@ const Navbar: React.FC = () => {
     };
 
     const observer = new IntersectionObserver((entries) => {
-      // 🔥 Always recalc visible sections on every callback
       const visibleSections = entries.filter((entry) => entry.isIntersecting);
-
       if (visibleSections.length > 0) {
-        // Pick the one with the largest intersection ratio
         const mostVisible = visibleSections.reduce((max, entry) =>
           entry.intersectionRatio > max.intersectionRatio ? entry : max
         );
-
         if (mostVisible.target instanceof HTMLElement) {
           setActive(mostVisible.target.id);
         }
@@ -52,15 +53,22 @@ const Navbar: React.FC = () => {
   }, []);
 
   return (
-    <nav className="fixed top-0 left-0 z-50 w-full backdrop-blur-3xl shadow-md bg-[var(--color-bg-light)] text-[var(--color-text)]">
-      <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-4">
+    <nav className="fixed top-0 left-0 z-50 w-full backdrop-blur-lg shadow-md bg-white/80">
+      <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
         {/* Logo */}
-        <Link href="/" className="font-bold text-xl">
-          Events By Kare
+        <Link href="/" className="flex items-center">
+          <Image
+            src="/logo2.png"
+            alt="Events By Kare"
+            width={180}
+            height={60}
+            className="h-auto w-auto object-contain"
+            priority
+          />
         </Link>
 
         {/* Desktop Links */}
-        <div className="hidden md:flex gap-6">
+        <div className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
             <a
               key={item.id}
@@ -74,15 +82,39 @@ const Navbar: React.FC = () => {
               {item.label}
             </a>
           ))}
+
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="text-blue-500 text-lg pl-3 font-semibold hover:text-blue-700"
+            >
+              See Admin Page
+            </Link>
+          )}
         </div>
 
-        {/* CTA button */}
-        <a
-          href="#request-event"
-          className="hidden md:inline-block px-4 py-2 rounded-lg bg-[var(--color-primary)] text-white hover:bg-[var(--color-secondary)] transition"
-        >
-          Request an Event
-        </a>
+        {/* Right CTA and User */}
+        <div className="hidden md:flex items-center gap-4">
+          <a
+            href="#request-event"
+            className="px-4 py-2 rounded-lg bg-[var(--color-primary)] text-white hover:bg-[var(--color-secondary)] transition"
+          >
+            Request an Event
+          </a>
+
+          <SignedIn>
+            <UserButton />
+          </SignedIn>
+
+          <SignedOut>
+            <Link
+              href="/sign-in"
+              className="px-4 py-2 rounded-lg bg-[var(--color-primary)] text-white hover:bg-[var(--color-secondary)] transition"
+            >
+              Sign In
+            </Link>
+          </SignedOut>
+        </div>
 
         {/* Mobile menu button */}
         <button
@@ -93,9 +125,9 @@ const Navbar: React.FC = () => {
         </button>
       </div>
 
-      {/* Mobile Links */}
+      {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden flex flex-col gap-4 px-6 py-4 bg-[var(--color-bg-secondary)]">
+        <div className="md:hidden bg-white/95 shadow-lg flex flex-col gap-4 px-6 py-6">
           {navItems.map((item) => (
             <a
               key={item.id}
@@ -105,11 +137,43 @@ const Navbar: React.FC = () => {
                   ? "text-[var(--color-primary)] font-semibold"
                   : ""
               }`}
-              onClick={() => setIsOpen(false)} // close on click
+              onClick={() => setIsOpen(false)}
             >
               {item.label}
             </a>
           ))}
+
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="text-[var(--color-primary)] font-semibold hover:text-[var(--color-secondary)]"
+              onClick={() => setIsOpen(false)}
+            >
+              Admin
+            </Link>
+          )}
+
+          <SignedIn>
+            <UserButton />
+          </SignedIn>
+
+          <SignedOut>
+            <Link
+              href="/sign-in"
+              className="px-4 py-2 rounded-lg bg-[var(--color-primary)] text-white hover:bg-[var(--color-secondary)] transition"
+              onClick={() => setIsOpen(false)}
+            >
+              Sign In
+            </Link>
+          </SignedOut>
+
+          <a
+            href="#request-event"
+            className="px-4 py-2 rounded-lg bg-[var(--color-primary)] text-white hover:bg-[var(--color-secondary)] transition"
+            onClick={() => setIsOpen(false)}
+          >
+            Request an Event
+          </a>
         </div>
       )}
     </nav>

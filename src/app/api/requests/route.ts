@@ -7,25 +7,51 @@ import {
   sanitizeString,
   checkRateLimit,
 } from "@/lib/validation";
+import { requireAdmin } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
+    const { error } = await requireAdmin();
+    if (error) return error;
+    // now you have a guaranteed admin user
+
+    // ✅ At this point, only admins can continue
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get("status");
+    const search = searchParams.get("search") || "";
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "10", 10);
     const skip = (page - 1) * limit;
 
-    // Properly type the filter
-    const where: Prisma.RequestWhereInput = {};
-    if (status && ["PENDING", "COMPLETED"].includes(status)) {
+    const where: Prisma.RequestWhereInput = { deletedAt: null };
+
+    if (
+      status &&
+      [
+        "PENDING",
+        "APPROVED",
+        "IN_PROGRESS",
+        "COMPLETED",
+        "REJECTED",
+        "CANCELLED",
+        "ON_HOLD",
+      ].includes(status)
+    ) {
       where.status = status as Prisma.EnumRequestStatusFilter["equals"];
     }
 
-    // Get total count for pagination
+    if (search.trim()) {
+      where.OR = [
+        { firstName: { contains: search, mode: "insensitive" } },
+        { lastName: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { eventType: { contains: search, mode: "insensitive" } },
+        { details: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
     const totalCount = await prisma.request.count({ where });
 
-    // Get requests with pagination
     const requests = await prisma.request.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -34,12 +60,14 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      requests,
-      pagination: {
-        total: totalCount,
-        page,
-        limit,
-        totalPages: Math.ceil(totalCount / limit),
+      data: {
+        requests,
+        pagination: {
+          total: totalCount,
+          page,
+          limit,
+          totalPages: Math.ceil(totalCount / limit),
+        },
       },
     });
   } catch (error) {
@@ -55,10 +83,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Get client IP for rate limiting
     const clientIp = request.headers.get("x-forwarded-for") || "unknown";
 
-    // Check rate limit
     if (!checkRateLimit(`request_${clientIp}`, 5, 15 * 60 * 1000)) {
       return NextResponse.json(
         { error: "Too many requests. Please try again later." },
@@ -66,7 +92,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate input
     const validation = validateEventRequest(body);
     if (!validation.isValid) {
       return NextResponse.json(
@@ -75,7 +100,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Sanitize input
     const sanitizedData = {
       firstName: sanitizeString(body.firstName),
       lastName: sanitizeString(body.lastName),
@@ -84,15 +108,16 @@ export async function POST(request: NextRequest) {
       details: body.details ? sanitizeString(body.details) : null,
     };
 
-    // Create request
     const newRequest = await prisma.request.create({
       data: sanitizedData,
     });
 
     return NextResponse.json(
       {
-        message: "Request submitted successfully",
-        request: newRequest,
+        data: {
+          message: "Request submitted successfully",
+          request: newRequest,
+        },
       },
       { status: 201 }
     );

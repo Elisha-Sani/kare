@@ -1,7 +1,7 @@
-// src/components/admin/Sidebar.tsx
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -18,17 +18,28 @@ export default function Sidebar({
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
 }) {
+  const router = useRouter();
+
   const navItems = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/requests", label: "Requests", icon: ClipboardList },
     { href: "/admin/testimonials", label: "Testimonials", icon: MessageSquare },
   ];
 
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/"); // redirect after logout
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+  };
+
   return (
     <>
       {/* Sidebar */}
       <aside
-        className={`fixed md:static top-0 left-0 h-screen w-64 bg-[var(--color-bg-secondary)] border-r border-[var(--color-secondary)] transform transition-transform duration-300 ease-in-out z-50
+        className={`fixed start-0 md:static top-0 left-0 h-screen w-64 bg-[var(--color-bg-secondary)] border-r border-[var(--color-secondary)] transform transition-transform duration-300 ease-in-out z-50
         ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
       >
         {/* Brand Header */}
@@ -64,6 +75,7 @@ export default function Sidebar({
         <div className="p-4 border-t border-[var(--color-secondary)]">
           <Button
             variant="ghost"
+            onClick={handleLogout}
             className="w-full flex items-center gap-2 justify-center text-[var(--color-text)] hover:bg-[var(--color-primary)] hover:text-white transition-colors"
           >
             <LogOut className="h-5 w-5" />

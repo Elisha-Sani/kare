@@ -2,12 +2,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma, TestimonialStatus } from "@prisma/client";
+import { requireAdmin } from "@/lib/auth";
 
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { error } = await requireAdmin();
+    if (error) return error;
+
     const { id: idParam } = await context.params;
     const id = parseInt(idParam);
 

@@ -6,72 +6,47 @@ import {
   sanitizeString,
   checkRateLimit,
 } from "@/lib/validation";
-import { Prisma, TestimonialStatus } from "@prisma/client";
+import { TestimonialStatus } from "@prisma/client";
+// import { requireAdmin } from "@/lib/auth";
 
+// GET testimonials
 export async function GET(request: NextRequest) {
   try {
+    // const { error } = await requireAdmin();
+    // if (error) return error;
+
     const searchParams = request.nextUrl.searchParams;
-    const status = searchParams.get("status");
-    const approved = searchParams.get("approved") === "true"; // normalize to boolean
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "10", 10);
-    const skip = (page - 1) * limit;
-
-    // Build where clause with proper type
-    const where: Prisma.TestimonialWhereInput = {};
-
-    // For public display, only show approved
-    if (approved) {
-      where.status = TestimonialStatus.APPROVED;
-    } else if (
-      status &&
-      Object.values(TestimonialStatus).includes(status as TestimonialStatus)
-    ) {
-      where.status = status as TestimonialStatus;
-    }
-
-    const totalCount = await prisma.testimonial.count({ where });
+    const limit = parseInt(searchParams.get("limit") || "6", 10);
 
     const testimonials = await prisma.testimonial.findMany({
-      where,
+      where: { status: TestimonialStatus.APPROVED },
       orderBy: { createdAt: "desc" },
-      skip,
       take: limit,
       select: {
         id: true,
         name: true,
-        email: !approved, // Only show email in admin view
         comment: true,
         rating: true,
-        status: !approved, // Hide status in public view
         createdAt: true,
       },
     });
 
-    return NextResponse.json({
-      testimonials,
-      pagination: {
-        total: totalCount,
-        page,
-        limit,
-        totalPages: Math.ceil(totalCount / limit),
-      },
-    });
+    return NextResponse.json({ data: { testimonials } }, { status: 200 });
   } catch (error) {
     console.error("Error fetching testimonials:", error);
     return NextResponse.json(
-      { error: "Failed to fetch testimonials" },
+      { error: "Failed to fetch testimonials." },
       { status: 500 }
     );
   }
 }
 
+// POST testimonial
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const clientIp = request.headers.get("x-forwarded-for") || "unknown";
 
-    // Rate limiting
     if (!checkRateLimit(`testimonial_${clientIp}`, 3, 60 * 60 * 1000)) {
       return NextResponse.json(
         { error: "Too many submissions. Please try again later." },
@@ -79,7 +54,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate input
     const validation = validateTestimonial(body);
     if (!validation.isValid) {
       return NextResponse.json(
@@ -88,7 +62,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Sanitize
     const sanitizedData = {
       name: sanitizeString(body.name),
       email: sanitizeString(body.email).toLowerCase(),
@@ -96,38 +69,45 @@ export async function POST(request: NextRequest) {
       rating: Math.min(5, Math.max(1, parseInt(body.rating, 10) || 5)),
     };
 
-    // Prevent duplicate submissions within 24h
-    const existingTestimonial = await prisma.testimonial.findFirst({
-      where: {
-        email: sanitizedData.email,
-        createdAt: {
-          gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    const clientExists = await prisma.request.findFirst({
+      where: { email: sanitizedData.email, status: "COMPLETED" },
+    });
+
+    if (!clientExists) {
+      return NextResponse.json(
+        {
+          error:
+            "Only clients who have received a service can post a testimonial.",
         },
-      },
+        { status: 403 }
+      );
+    }
+
+    const existingTestimonial = await prisma.testimonial.findFirst({
+      where: { email: sanitizedData.email },
     });
 
     if (existingTestimonial) {
       return NextResponse.json(
-        {
-          error:
-            "You have already submitted a testimonial recently. Please wait before submitting another.",
-        },
+        { error: "You have already submitted a testimonial for this service." },
         { status: 400 }
       );
     }
 
-    // Create testimonial
     const newTestimonial = await prisma.testimonial.create({
-      data: sanitizedData,
+      data: { ...sanitizedData, status: TestimonialStatus.PENDING },
     });
 
     return NextResponse.json(
       {
-        message: "Thank you for your testimonial! It will be reviewed shortly.",
-        testimonial: {
-          id: newTestimonial.id,
-          name: newTestimonial.name,
-          rating: newTestimonial.rating,
+        data: {
+          message:
+            "Thank you for your testimonial! It will be reviewed shortly.",
+          testimonial: {
+            id: newTestimonial.id,
+            name: newTestimonial.name,
+            rating: newTestimonial.rating,
+          },
         },
       },
       { status: 201 }
@@ -135,7 +115,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error creating testimonial:", error);
     return NextResponse.json(
-      { error: "Failed to submit testimonial" },
+      { error: "Failed to submit testimonial. Please try again later." },
       { status: 500 }
     );
   }

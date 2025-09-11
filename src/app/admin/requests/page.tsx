@@ -1,13 +1,12 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import AdminDashboard from "./components/AdminDashboardClient";
+import AdminRequestsPage from "../components/AdminRequestPage";
 
-export default async function AdminPage() {
+export default async function RequestPage() {
   const user = await currentUser();
 
   if (!user || user.publicMetadata.role !== "admin") {
     redirect("/");
   }
-
-  return <AdminDashboard />;
+  return <AdminRequestsPage />;
 }
