@@ -51,7 +51,7 @@ export default function AdminTestimonialsPage() {
         });
         if (statusFilter !== "ALL") query.set("status", statusFilter);
 
-        const res = await fetch(`/api/testimonials?${query}`);
+        const res = await fetch(`/api/testimonials?${query.toString()}`);
         if (!res.ok) throw new Error("Failed to fetch testimonials");
 
         const json = await res.json();

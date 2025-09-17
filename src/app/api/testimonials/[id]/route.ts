@@ -33,7 +33,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(testimonial);
+    return NextResponse.json({ data: { testimonial } }, { status: 200 });
   } catch (error) {
     console.error("Error fetching testimonial:", error);
     return NextResponse.json(
@@ -48,6 +48,9 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { error } = await requireAdmin();
+    if (error) return error;
+
     const { id: idParam } = await context.params;
     const id = parseInt(idParam);
     const body = await request.json();
@@ -77,12 +80,17 @@ export async function PATCH(
       data: updates,
     });
 
-    return NextResponse.json({
-      message: `Testimonial ${
-        updates.status?.toLowerCase() || "updated"
-      } successfully`,
-      testimonial: updatedTestimonial,
-    });
+    return NextResponse.json(
+      {
+        data: {
+          message: `Testimonial ${
+            updates.status?.toLowerCase() || "updated"
+          } successfully`,
+          testimonial: updatedTestimonial,
+        },
+      },
+      { status: 200 }
+    );
   } catch (error: unknown) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2025") {
@@ -106,6 +114,9 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { error } = await requireAdmin();
+    if (error) return error;
+
     const { id: idParam } = await context.params;
     const id = parseInt(idParam);
 
@@ -120,9 +131,10 @@ export async function DELETE(
       where: { id },
     });
 
-    return NextResponse.json({
-      message: "Testimonial deleted successfully",
-    });
+    return NextResponse.json(
+      { data: { message: "Testimonial deleted successfully" } },
+      { status: 200 }
+    );
   } catch (error: unknown) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2025") {

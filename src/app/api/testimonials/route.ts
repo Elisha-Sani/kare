@@ -6,32 +6,74 @@ import {
   sanitizeString,
   checkRateLimit,
 } from "@/lib/validation";
-import { TestimonialStatus } from "@prisma/client";
-// import { requireAdmin } from "@/lib/auth";
+import { TestimonialStatus, Prisma } from "@prisma/client";
+import { requireAdmin } from "@/lib/auth";
 
 // GET testimonials
 export async function GET(request: NextRequest) {
   try {
-    // const { error } = await requireAdmin();
-    // if (error) return error;
-
     const searchParams = request.nextUrl.searchParams;
-    const limit = parseInt(searchParams.get("limit") || "6", 10);
+    const isAdminMode = searchParams.get("approved") === "false";
 
-    const testimonials = await prisma.testimonial.findMany({
-      where: { status: TestimonialStatus.APPROVED },
-      orderBy: { createdAt: "desc" },
-      take: limit,
-      select: {
-        id: true,
-        name: true,
-        comment: true,
-        rating: true,
-        createdAt: true,
-      },
-    });
+    if (isAdminMode) {
+      const { error } = await requireAdmin();
+      if (error) return error;
+    }
 
-    return NextResponse.json({ data: { testimonials } }, { status: 200 });
+    const page = isAdminMode
+      ? parseInt(searchParams.get("page") ?? "1", 10)
+      : 1;
+    const limit = parseInt(
+      searchParams.get("limit") ?? (isAdminMode ? "9" : "6"),
+      10
+    );
+    const skip = (page - 1) * limit;
+    const statusParam = searchParams.get("status");
+
+    const where: Prisma.TestimonialWhereInput = {};
+    if (isAdminMode && statusParam && statusParam !== "ALL") {
+      if (
+        !Object.values(TestimonialStatus).includes(
+          statusParam as TestimonialStatus
+        )
+      ) {
+        return NextResponse.json(
+          { error: "Invalid status filter" },
+          { status: 400 }
+        );
+      }
+      where.status = statusParam as TestimonialStatus;
+    } else if (!isAdminMode) {
+      where.status = TestimonialStatus.APPROVED;
+    }
+
+    const [testimonials, total] = await Promise.all([
+      prisma.testimonial.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: isAdminMode ? skip : undefined,
+        take: limit,
+        select: {
+          id: true,
+          name: true,
+          comment: true,
+          rating: true,
+          createdAt: true,
+          ...(isAdminMode ? { email: true, status: true } : {}),
+        },
+      }),
+      isAdminMode ? prisma.testimonial.count({ where }) : Promise.resolve(0),
+    ]);
+
+    const responseData: {
+      testimonials: typeof testimonials;
+      pagination?: { totalPages: number };
+    } = { testimonials };
+    if (isAdminMode) {
+      responseData.pagination = { totalPages: Math.ceil(total / limit) };
+    }
+
+    return NextResponse.json({ data: responseData }, { status: 200 });
   } catch (error) {
     console.error("Error fetching testimonials:", error);
     return NextResponse.json(
