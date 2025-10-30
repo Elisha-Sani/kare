@@ -39,7 +39,7 @@ export default function AdminTestimonialsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Load testimonials
+  // Loading testimonials
   useEffect(() => {
     const fetchTestimonials = async () => {
       setLoading(true);
