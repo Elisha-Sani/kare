@@ -52,14 +52,17 @@ export default function Footer() {
         >
           <p>
             Email:{" "}
-            <a href="mailto:info@eventsbykare.com" className="hover:opacity-70">
-              info@eventsbykare.com
+            <a
+              href="mailto:eventsbykare@gmail.com"
+              className="hover:opacity-70"
+            >
+              eventsbykare@gmail.com
             </a>
           </p>
           <p>
             Phone:{" "}
-            <a href="tel:+254700000000" className="hover:opacity-70">
-              +254 700 000 000
+            <a href="" className="hover:opacity-70">
+              +2540000000
             </a>
           </p>
         </div>
